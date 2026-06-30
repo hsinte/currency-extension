@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "即時匯率換算器",
+  "version": "1.0.0",
+  "description": "查詢最新匯率、30天趨勢圖與便捷換算",
+  "permissions": ["storage"],
+  "host_permissions": ["https://rate.bot.com.tw/*"],
+  "icons": {
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icons/icon.png",
+      "32": "icons/icon.png",
+      "48": "icons/icon.png",
+      "128": "icons/icon.png"
+    }
+  },
+  "options_page": "options.html"
+}

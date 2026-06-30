@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="./src/style.css" />
+    <title>匯率換算設定</title>
+  </head>
+  <body
+    class="bg-gray-50 text-gray-800 p-8 min-w-100 flex justify-center items-center h-screen"
+  >
+    <div
+      class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 max-w-sm w-full space-y-4"
+    >
+      <h2
+        class="text-xl font-bold text-gray-900 border-b pb-2 flex items-center gap-2"
+      >
+        ⚙️ 擴充功能設定
+      </h2>
+
+      <div class="flex flex-col space-y-1.5">
+        <label for="currencylist" class="text-sm font-medium text-gray-500"
+          >預設幣別</label
+        >
+        <select
+          id="currencylist"
+          class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+        >
+          <option value="JPY">讀取中...</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button
+          id="save"
+          class="w-full bg-blue-500 text-white py-2 rounded-xl font-medium shadow-sm hover:bg-blue-600 active:scale-[0.98] transition-all"
+        >
+          儲存
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="./src/options.ts"></script>
+  </body>
+</html>
