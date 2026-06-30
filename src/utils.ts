@@ -47,3 +47,20 @@ export function toCommaString(valStr: string): string {
 export function removeComma(valStr: string): string {
   return valStr.replace(/,/g, "");
 }
+
+export interface TrackItem {
+  id: string; // 唯一的防打架 ID (可用時間戳記)
+  code: string; // 幣別代碼, 如 "JPY"
+  rateType: "cashSell" | "spotSell"; // 匯率類別
+  condition: "lte" | "gte"; // lte: 小於等於, gte: 大於等於
+  targetPrice: number; // 目標價格
+  action: "pause" | "delete" | "continue"; // 達成後的動作
+  status: "active" | "paused"; // 當前這條追蹤是否啟動中
+}
+
+// 統一管理儲存的 Key 名稱
+export const STORAGE_KEYS = {
+  DEFAULT_CURRENCY: "defaultCurrency",
+  USE_COMMA: "useComma",
+  TRACK_LIST: "trackList", // 儲存 [TrackItem, TrackItem, ...]
+};

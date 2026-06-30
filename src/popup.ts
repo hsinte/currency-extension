@@ -1,6 +1,7 @@
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
 import { API_URLS, i18n, removeComma, toCommaString } from "./utils";
+import { checkAndNotify } from "./notifier";
 
 // 1. 綁定 DOM 元素
 const viewCurrencySelect = document.getElementById(
@@ -144,13 +145,16 @@ async function fetchCurrentRates() {
 
       viewCurrencySelect.value = currentViewCurrency;
 
-      // 紅框連動：依據當前看板幣別自動調整換算區
+      // 依據當前看板幣別自動調整換算區
       syncExchangeSelectWithView();
       updateRateBoard(updateTime);
 
       // 預設填入 1 進行初始計算
       sourceAmountInput.value = "1";
       calculateRates("source");
+
+      // 當使用者主動打開 Popup 查詢時，順便在前端做一次到價比對
+      checkAndNotify(globalRates);
     });
   } catch (error) {
     console.error("無法取得即時匯率:", error);
