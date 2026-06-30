@@ -1,10 +1,10 @@
-// 2. 網址集中管理常數 (集中管理，未來台銀若改網址只需改這裡)
+// 網址集中管理常數 (集中管理，未來台銀若改網址只需改這裡)
 export const API_URLS = {
   CURRENT_DAY: "https://rate.bot.com.tw/xrt/flcsv/0/day",
   HISTORY_L3M: "https://rate.bot.com.tw/xrt/flcsv/0/L3M/", // 後面動態接幣別，如 JPY
 };
 
-// 1. 共用 i18n 翻譯函數
+// 共用 i18n 翻譯函數
 export function i18n(currency: string): string {
   const dictionary: Record<string, string> = {
     TWD: "新台幣",
@@ -29,4 +29,21 @@ export function i18n(currency: string): string {
     CNY: "人民幣",
   };
   return dictionary[currency] || currency;
+}
+
+/**
+ * 將純數字字串轉為千分位格式 (例如 "1234.56" -> "1,234.56")
+ */
+export function toCommaString(valStr: string): string {
+  if (!valStr) return "";
+  const parts = valStr.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+}
+
+/**
+ * 將帶有千分位的字串還原為純數字字串 (例如 "1,234.56" -> "1234.56")
+ */
+export function removeComma(valStr: string): string {
+  return valStr.replace(/,/g, "");
 }

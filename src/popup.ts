@@ -1,6 +1,6 @@
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
-import { API_URLS, i18n } from "./utils";
+import { API_URLS, i18n, removeComma, toCommaString } from "./utils";
 
 // 1. 綁定 DOM 元素
 const viewCurrencySelect = document.getElementById(
@@ -46,6 +46,7 @@ let globalRates: Record<string, RateInfo> = {
 
 let chartInstance: Chart | null = null;
 let currentViewCurrency = "JPY"; // 當前牌告與趨勢圖查看的外幣
+let configUseComma = false; // 儲存使用者是否開啟千分位的狀態
 
 // 2. 根據動態抓到的清單，生成下拉選單
 function populateSelectOptions(fetchedCurrencies: string[]) {
@@ -122,7 +123,9 @@ async function fetchCurrentRates() {
     populateSelectOptions(fetchedCurrencies);
 
     // 從 Storage 讀取上次觀看的幣別紀錄
-    chrome.storage.sync.get(["defaultCurrency"], (result) => {
+    chrome.storage.sync.get(["defaultCurrency", "useComma"], (result) => {
+      configUseComma = !!result.useComma; // 快取千分位變數
+
       if (
         result &&
         typeof result.currency === "string" &&
@@ -178,23 +181,33 @@ function calculateRates(direction: "source" | "target") {
   const tgtRate = globalRates[tgtCur].cashSell;
 
   if (direction === "source") {
-    const srcVal = parseFloat(sourceAmountInput.value);
+    // 先拔掉逗號再轉 Float
+    const srcVal = parseFloat(removeComma(sourceAmountInput.value));
     if (isNaN(srcVal) || srcVal === 0) {
       targetAmountInput.value = "";
       return;
     }
 
     const tgtVal = (srcVal * srcRate) / tgtRate;
-    targetAmountInput.value = tgtVal.toFixed(2);
+    const finalStr = tgtVal.toFixed(2);
+    // 依據設定決定是否轉換成千分位
+    targetAmountInput.value = configUseComma
+      ? toCommaString(finalStr)
+      : finalStr;
   } else {
-    const tgtVal = parseFloat(targetAmountInput.value);
+    // 先拔掉逗號再轉 Float
+    const tgtVal = parseFloat(removeComma(targetAmountInput.value));
     if (isNaN(tgtVal) || tgtVal === 0) {
       sourceAmountInput.value = "";
       return;
     }
 
     const srcVal = (tgtVal * tgtRate) / srcRate;
-    sourceAmountInput.value = srcVal.toFixed(2);
+    const finalStr = srcVal.toFixed(2);
+    // 依據設定決定是否轉換成千分位
+    sourceAmountInput.value = configUseComma
+      ? toCommaString(finalStr)
+      : finalStr;
   }
 }
 
@@ -340,6 +353,30 @@ toggleChartBtn.addEventListener("click", () => {
     fetchAndDrawChart();
   } else {
     toggleChartBtn.textContent = "顯示近 30 天趨勢圖";
+  }
+});
+
+// 點擊來源欄位時：移除逗號還原純數字，方便使用者編輯
+sourceAmountInput.addEventListener("focus", () => {
+  sourceAmountInput.value = removeComma(sourceAmountInput.value);
+});
+
+// 離開來源欄位時：如果開啟設定，重新補回千分位
+sourceAmountInput.addEventListener("blur", () => {
+  if (configUseComma && sourceAmountInput.value) {
+    sourceAmountInput.value = toCommaString(sourceAmountInput.value);
+  }
+});
+
+// 點擊目標欄位時：移除逗號還原純數字
+targetAmountInput.addEventListener("focus", () => {
+  targetAmountInput.value = removeComma(targetAmountInput.value);
+});
+
+// 離開目標欄位時：如果開啟設定，重新補回千分位
+targetAmountInput.addEventListener("blur", () => {
+  if (configUseComma && targetAmountInput.value) {
+    targetAmountInput.value = toCommaString(targetAmountInput.value);
   }
 });
 

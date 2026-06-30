@@ -3,6 +3,9 @@ import { API_URLS, i18n } from "./utils";
 const currencyListSelect = document.getElementById(
   "currencylist",
 ) as HTMLSelectElement;
+const enableCommaCheckbox = document.getElementById(
+  "enable-comma",
+) as HTMLInputElement;
 const saveBtn = document.getElementById("save") as HTMLButtonElement;
 
 // 動態讀取台銀 CSV 並初始化下拉選單
@@ -28,13 +31,16 @@ async function iniDropDown() {
       }
     }
 
-    // 關鍵修正：這裡改讀取 'defaultCurrency'
-    chrome.storage.sync.get(["defaultCurrency"], (result) => {
+    // 同時讀取預設幣別和千分位設定
+    chrome.storage.sync.get(["defaultCurrency", "useComma"], (result) => {
       if (result && typeof result.defaultCurrency === "string") {
         currencyListSelect.value = result.defaultCurrency;
       } else {
         currencyListSelect.value = "JPY"; // 全空預設日圓
       }
+
+      // 回填勾選框狀態（預設不勾選，或依據儲存值）
+      enableCommaCheckbox.checked = !!result.useComma;
     });
   } catch (error) {
     console.error("設定頁面載入外幣清單失敗:", error);
@@ -46,11 +52,15 @@ async function iniDropDown() {
 // 儲存設定
 function Save() {
   const selectedCurrency = currencyListSelect.value;
+  const useComma = enableCommaCheckbox.checked; // 取得是否勾選
 
   // 關鍵修正：這裡改存入 'defaultCurrency'
-  chrome.storage.sync.set({ defaultCurrency: selectedCurrency }, () => {
-    window.close();
-  });
+  chrome.storage.sync.set(
+    { defaultCurrency: selectedCurrency, useComma: useComma },
+    () => {
+      window.close();
+    },
+  );
 }
 
 document.addEventListener("DOMContentLoaded", () => {
