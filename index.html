@@ -18,16 +18,19 @@
           更新時間：載入中...
         </div>
       </div>
-      <div
-        class="grid grid-cols-2 gap-4 text-center bg-gray-50 p-2.5 rounded-lg"
-      >
-        <div>
-          <div class="text-xs text-gray-400 mb-1">現金賣出</div>
-          <div id="cash-rate" class="font-bold text-xl text-blue-600">-</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div id="cash-card" class="rate-card-selectable active">
+          <p class="text-xs text-gray-500 font-medium mb-1">現金賣出</p>
+          <span id="cash-rate" class="text-xl font-bold text-blue-600"
+            >0.0000</span
+          >
         </div>
-        <div>
-          <div class="text-xs text-gray-400 mb-1">即期賣出</div>
-          <div id="spot-rate" class="font-bold text-xl text-green-600">-</div>
+
+        <div id="spot-card" class="rate-card-selectable">
+          <p class="text-xs text-gray-500 font-medium mb-1">即期賣出</p>
+          <span id="spot-rate" class="text-xl font-bold text-green-600"
+            >0.0000</span
+          >
         </div>
       </div>
     </div>

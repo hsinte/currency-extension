@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+.rate-card-selectable {
+  @apply bg-gray-50 p-4 rounded-xl border-2 border-transparent transition-all duration-200 cursor-pointer text-center;
+}
+
+.rate-card-selectable:hover {
+  @apply bg-gray-100;
+}
+
+/* 被點選時的樣式 (以藍色為例，你可以換成你喜歡的顏色) */
+.rate-card-selectable.active {
+  @apply border-blue-500 bg-blue-50 shadow-sm;
+}
+
+/* 讓裡面的數值在 active 時稍微放大 */
+.rate-card-selectable.active span {
+  @apply scale-110 inline-block;
+}

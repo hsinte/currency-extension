@@ -11,6 +11,8 @@ const updateTimeSpan = document.getElementById(
 ) as HTMLSpanElement;
 const cashRateSpan = document.getElementById("cash-rate") as HTMLSpanElement;
 const spotRateSpan = document.getElementById("spot-rate") as HTMLSpanElement;
+const cashCard = document.getElementById("cash-card") as HTMLDivElement;
+const spotCard = document.getElementById("spot-card") as HTMLDivElement;
 
 const sourceAmountInput = document.getElementById(
   "source-amount",
@@ -47,6 +49,9 @@ let globalRates: Record<string, RateInfo> = {
 let chartInstance: Chart | null = null;
 let currentViewCurrency = "JPY"; // 當前牌告與趨勢圖查看的外幣
 let configUseComma = false; // 儲存使用者是否開啟千分位的狀態
+// 紀錄當前使用的是哪種匯率類型
+// 'cashSell' 對應 CSV 的第 12/13 欄，'spotSell' 對應第 13/14 欄
+let currentRateType: "cashSell" | "spotSell" = "cashSell";
 
 // 2. 根據動態抓到的清單，生成下拉選單
 function populateSelectOptions(fetchedCurrencies: string[]) {
@@ -170,6 +175,18 @@ function updateRateBoard(timeStr?: string) {
   }
 }
 
+/**
+ * 智慧型小數點四捨五入：根據金額大小動態決定保留幾位小數
+ */
+function smartToFixed(value: number): string {
+  // 如果金額很小 (小於 100)，保留 4 位小數，這樣 1 日圓或 1 美金換算時才看得出即期/現金的差距
+  if (value < 100) {
+    return value.toFixed(4);
+  }
+  // 一般大額金額，保留 2 位小數即可
+  return value.toFixed(2);
+}
+
 // 雙向即時換算邏輯
 function calculateRates(direction: "source" | "target") {
   const srcCur = sourceSelect.value;
@@ -177,8 +194,9 @@ function calculateRates(direction: "source" | "target") {
 
   if (!globalRates[srcCur] || !globalRates[tgtCur]) return;
 
-  const srcRate = globalRates[srcCur].cashSell;
-  const tgtRate = globalRates[tgtCur].cashSell;
+  // 依據 currentRateType 動態抓取匯率
+  const srcRate = globalRates[srcCur][currentRateType];
+  const tgtRate = globalRates[tgtCur][currentRateType];
 
   if (direction === "source") {
     // 先拔掉逗號再轉 Float
@@ -189,7 +207,7 @@ function calculateRates(direction: "source" | "target") {
     }
 
     const tgtVal = (srcVal * srcRate) / tgtRate;
-    const finalStr = tgtVal.toFixed(2);
+    const finalStr = smartToFixed(tgtVal);
     // 依據設定決定是否轉換成千分位
     targetAmountInput.value = configUseComma
       ? toCommaString(finalStr)
@@ -203,7 +221,7 @@ function calculateRates(direction: "source" | "target") {
     }
 
     const srcVal = (tgtVal * tgtRate) / srcRate;
-    const finalStr = srcVal.toFixed(2);
+    const finalStr = smartToFixed(srcVal);
     // 依據設定決定是否轉換成千分位
     sourceAmountInput.value = configUseComma
       ? toCommaString(finalStr)
@@ -224,20 +242,20 @@ async function fetchAndDrawChart() {
 
     const labels: string[] = [];
     const datas: number[] = [];
+    // 決定要抓哪一欄：現金賣出在 columns[13]，即期賣出在 columns[14]
+    const targetColumnIndex = currentRateType === "cashSell" ? 13 : 14;
 
     let fetchedCount = 0;
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].replace(/"/g, "").trim();
-      if (!line) continue;
-
-      const columns = line.split(",");
+      const columns = lines[i].replace(/"/g, "").split(",");
       const dateStr = columns[0];
-      const cashSell = columns[13] ? parseFloat(columns[13].trim()) : NaN;
+      const rateVal = columns[targetColumnIndex]
+        ? parseFloat(columns[targetColumnIndex].trim())
+        : NaN;
 
-      if (dateStr && !isNaN(cashSell) && fetchedCount < 30) {
-        const formattedDate = `${dateStr.substring(4, 6)}/${dateStr.substring(6, 8)}`;
-        labels.push(formattedDate);
-        datas.push(cashSell);
+      if (/^\d{8}$/.test(dateStr) && !isNaN(rateVal) && fetchedCount < 30) {
+        labels.push(`${dateStr.substring(4, 6)}/${dateStr.substring(6, 8)}`);
+        datas.push(rateVal);
         fetchedCount++;
       }
     }
@@ -257,7 +275,7 @@ async function fetchAndDrawChart() {
           labels: labels,
           datasets: [
             {
-              label: "近30天現金賣出匯率",
+              label: "近30天匯率",
               data: datas,
               backgroundColor: "rgba(255, 99, 132, 0.05)",
               borderColor: "rgb(255, 99, 132)",
@@ -378,6 +396,34 @@ targetAmountInput.addEventListener("blur", () => {
   if (configUseComma && targetAmountInput.value) {
     targetAmountInput.value = toCommaString(targetAmountInput.value);
   }
+});
+
+// 點擊「現金賣出」牌卡
+cashCard.addEventListener("click", () => {
+  if (currentRateType === "cashSell") return; // 已在該模式則不動作
+  currentRateType = "cashSell";
+
+  // UI 狀態切換
+  cashCard.classList.add("active");
+  spotCard.classList.remove("active");
+
+  // 重新計算並更新圖表
+  calculateRates("source");
+  if (!chartContainer.classList.contains("hidden")) fetchAndDrawChart();
+});
+
+// 點擊「即期賣出」牌卡
+spotCard.addEventListener("click", () => {
+  if (currentRateType === "spotSell") return;
+  currentRateType = "spotSell";
+
+  // UI 狀態切換
+  spotCard.classList.add("active");
+  cashCard.classList.remove("active");
+
+  // 重新計算並更新圖表
+  calculateRates("source");
+  if (!chartContainer.classList.contains("hidden")) fetchAndDrawChart();
 });
 
 // 執行初始化
