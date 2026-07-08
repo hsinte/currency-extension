@@ -1,6 +1,12 @@
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
-import { API_URLS, i18n, removeComma, toCommaString } from "./utils";
+import {
+  API_URLS,
+  i18n,
+  removeComma,
+  STORAGE_KEYS,
+  toCommaString,
+} from "./utils";
 import { checkAndNotify } from "./notifier";
 
 // 1. 綁定 DOM 元素
@@ -129,33 +135,38 @@ async function fetchCurrentRates() {
     populateSelectOptions(fetchedCurrencies);
 
     // 從 Storage 讀取上次觀看的幣別紀錄
-    chrome.storage.sync.get(["defaultCurrency", "useComma"], (result) => {
-      configUseComma = !!result.useComma; // 快取千分位變數
+    chrome.storage.sync.get(
+      [STORAGE_KEYS.DEFAULT_CURRENCY, STORAGE_KEYS.USE_COMMA],
+      (result) => {
+        configUseComma = !!result.useComma; // 快取千分位變數
+        const defaultCurrency = result[STORAGE_KEYS.DEFAULT_CURRENCY] as
+          | string
+          | undefined;
+        if (
+          result &&
+          typeof defaultCurrency === "string" &&
+          globalRates[defaultCurrency]
+        ) {
+          currentViewCurrency = defaultCurrency;
+        } else {
+          currentViewCurrency = "JPY";
+          chrome.storage.sync.set({ [STORAGE_KEYS.DEFAULT_CURRENCY]: "JPY" });
+        }
 
-      if (
-        result &&
-        typeof result.currency === "string" &&
-        globalRates[result.currency]
-      ) {
-        currentViewCurrency = result.currency;
-      } else {
-        currentViewCurrency = "JPY";
-        chrome.storage.sync.set({ currency: "JPY" });
-      }
+        viewCurrencySelect.value = currentViewCurrency;
 
-      viewCurrencySelect.value = currentViewCurrency;
+        // 依據當前看板幣別自動調整換算區
+        syncExchangeSelectWithView();
+        updateRateBoard(updateTime);
 
-      // 依據當前看板幣別自動調整換算區
-      syncExchangeSelectWithView();
-      updateRateBoard(updateTime);
+        // 預設填入 1 進行初始計算
+        sourceAmountInput.value = "1";
+        calculateRates("source");
 
-      // 預設填入 1 進行初始計算
-      sourceAmountInput.value = "1";
-      calculateRates("source");
-
-      // 當使用者主動打開 Popup 查詢時，順便在前端做一次到價比對
-      checkAndNotify(globalRates);
-    });
+        // 當使用者主動打開 Popup 查詢時，順便在前端做一次到價比對
+        checkAndNotify(globalRates);
+      },
+    );
   } catch (error) {
     console.error("無法取得即時匯率:", error);
     updateTimeSpan.textContent = "連線失敗";
